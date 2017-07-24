@@ -261,11 +261,11 @@ func (c *ClientConn) Close() error {
 	return c.Conn.Close()
 }
 
-func (c *ClientConn) ReadOKPacket() (*Result, error) {
+func (c *ClientConn) ReadOKPacket() (*mysql.Result, error) {
 	return c.readOK()
 }
 
-func (c *ClientConn) readOK() (*Result, error) {
+func (c *ClientConn) readOK() (*mysql.Result, error) {
 	data, err := c.ReadPacket()
 	if err != nil {
 		return nil, err
@@ -280,7 +280,7 @@ func (c *ClientConn) readOK() (*Result, error) {
 	}
 }
 func (c *ClientConn) handleErrorPacket(data []byte) error {
-	e := new(MyError)
+	e := new(mysql.MyError)
 
 	var pos int = 1
 
@@ -320,11 +320,11 @@ func (c *ClientConn) isEOFPacket(data []byte) bool {
 	return data[0] == mysql.EOF_HEADER && len(data) <= 5
 }
 
-func (c *ClientConn) handleOKPacket(data []byte) (*Result, error) {
+func (c *ClientConn) handleOKPacket(data []byte) (*mysql.Result, error) {
 	var n int
 	var pos int = 1
 
-	r := new(Result)
+	r := new(mysql.Result)
 
 	r.AffectedRows, _, n = mysql.LengthEncodedInt(data[pos:])
 	pos += n
