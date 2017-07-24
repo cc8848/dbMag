@@ -10,6 +10,7 @@ import (
 	"packet"
 	"strings"
 	"time"
+	"utils"
 )
 
 /*
@@ -255,4 +256,97 @@ func (conn *ClientConn) readInitialHandShake() error {
 	}
 
 	return nil
+}
+func (c *ClientConn) Close() error {
+	return c.Conn.Close()
+}
+
+func (c *ClientConn) ReadOKPacket() (*Result, error) {
+	return c.readOK()
+}
+
+func (c *ClientConn) readOK() (*Result, error) {
+	data, err := c.ReadPacket()
+	if err != nil {
+		return nil, err
+	}
+
+	if data[0] == mysql.OK_HEADER {
+		return c.handleOKPacket(data)
+	} else if data[0] == mysql.ERR_HEADER {
+		return nil, c.handleErrorPacket(data)
+	} else {
+		return nil, errors.New("invalid ok packet")
+	}
+}
+func (c *ClientConn) handleErrorPacket(data []byte) error {
+	e := new(MyError)
+
+	var pos int = 1
+
+	e.Code = binary.LittleEndian.Uint16(data[pos:])
+	pos += 2
+
+	if c.capability&mysql.CLIENT_PROTOCOL_41 > 0 {
+		//skip '#'
+		pos++
+		e.State = utils.String(data[pos : pos+5])
+		pos += 5
+	}
+
+	e.Message = utils.String(data[pos:])
+
+	return e
+}
+func (c *ClientConn) readUntilEOF() (err error) {
+	var data []byte
+
+	for {
+		data, err = c.ReadPacket()
+
+		if err != nil {
+			return
+		}
+
+		// EOF Packet
+		if c.isEOFPacket(data) {
+			return
+		}
+	}
+	return
+}
+
+func (c *ClientConn) isEOFPacket(data []byte) bool {
+	return data[0] == mysql.EOF_HEADER && len(data) <= 5
+}
+
+func (c *ClientConn) handleOKPacket(data []byte) (*Result, error) {
+	var n int
+	var pos int = 1
+
+	r := new(Result)
+
+	r.AffectedRows, _, n = mysql.LengthEncodedInt(data[pos:])
+	pos += n
+	r.InsertId, _, n = mysql.LengthEncodedInt(data[pos:])
+	pos += n
+
+	if c.capability&mysql.CLIENT_PROTOCOL_41 > 0 {
+		r.Status = binary.LittleEndian.Uint16(data[pos:])
+		c.status = r.Status
+		pos += 2
+
+		//todo:strict_mode, check warnings as error
+		//Warnings := binary.LittleEndian.Uint16(data[pos:])
+		//pos += 2
+	} else if c.capability&mysql.CLIENT_TRANSACTIONS > 0 {
+		r.Status = binary.LittleEndian.Uint16(data[pos:])
+		c.status = r.Status
+		pos += 2
+	}
+
+	//new ok package will check CLIENT_SESSION_TRACK too, but I don't support it now.
+
+	//skip info
+	return r, nil
 }
