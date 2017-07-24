@@ -1,0 +1,7 @@
+addr : "0.0.0.0:9090"
+logpath: "/tmp/"
+loglevel: "info"
+dbaddr: "192.168.10.211"
+dbusr: "repl"
+dbpasswd: "123"
+dbport: 33061
