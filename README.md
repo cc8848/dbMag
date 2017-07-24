@@ -1,2 +1,2 @@
 # dbMag
-MYSQL数据库管理平台
+MYSQL数据库管理
