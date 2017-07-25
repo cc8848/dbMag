@@ -1,2 +1,2 @@
 # dbMag
-MYSQL数据库管理
+MYSQL数据库相关组件
