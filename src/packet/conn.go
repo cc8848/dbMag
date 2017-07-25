@@ -5,35 +5,35 @@ import (
 	"bytes"
 	"io"
 	"net"
-	"mysql"
-	"errors"
+
+	"github.com/juju/errors"
+	. "mysql"
 )
 
 /*
 	Conn is the base class to handle MySQL protocol.
 */
-type Packet struct {
+type Conn struct {
 	net.Conn
 	br *bufio.Reader
 
 	Sequence uint8
 }
 
-func NewConn(conn net.Conn) *Packet {
-	p := new(Packet)
+func NewConn(conn net.Conn) *Conn {
+	c := new(Conn)
 
-	p.br = bufio.NewReaderSize(conn, 4096)
-	p.Conn = conn
+	c.br = bufio.NewReaderSize(conn, 4096)
+	c.Conn = conn
 
-	return p
+	return c
 }
 
-
-func (p *Packet) ReadPacket() ([]byte, error) {
+func (c *Conn) ReadPacket() ([]byte, error) {
 	var buf bytes.Buffer
 
-	if err := p.ReadPacketTo(&buf); err != nil {
-		return nil,err
+	if err := c.ReadPacketTo(&buf); err != nil {
+		return nil, errors.Trace(err)
 	} else {
 		return buf.Bytes(), nil
 	}
@@ -75,36 +75,36 @@ func (p *Packet) ReadPacket() ([]byte, error) {
 	// }
 }
 
-func (p *Packet) ReadPacketTo(w io.Writer) error {
+func (c *Conn) ReadPacketTo(w io.Writer) error {
 	header := []byte{0, 0, 0, 0}
 
-	if _, err := io.ReadFull(p.br, header); err != nil {
-		return mysql.ErrBadConn
+	if _, err := io.ReadFull(c.br, header); err != nil {
+		return ErrBadConn
 	}
 
 	length := int(uint32(header[0]) | uint32(header[1])<<8 | uint32(header[2])<<16)
 	if length < 1 {
-		return errors.New("invalid payload length")
+		return errors.Errorf("invalid payload length %d", length)
 	}
 
 	sequence := uint8(header[3])
 
-	if sequence != p.Sequence {
-		return errors.New("invalid sequence")
+	if sequence != c.Sequence {
+		return errors.Errorf("invalid sequence %d != %d", sequence, c.Sequence)
 	}
 
-	p.Sequence++
+	c.Sequence++
 
-	if n, err := io.CopyN(w, p.br, int64(length)); err != nil {
-		return mysql.ErrBadConn
+	if n, err := io.CopyN(w, c.br, int64(length)); err != nil {
+		return ErrBadConn
 	} else if n != int64(length) {
-		return mysql.ErrBadConn
+		return ErrBadConn
 	} else {
-		if length < mysql.MaxPayloadLen {
+		if length < MaxPayloadLen {
 			return nil
 		}
 
-		if err := p.ReadPacketTo(w); err != nil {
+		if err := c.ReadPacketTo(w); err != nil {
 			return err
 		}
 	}
@@ -114,50 +114,50 @@ func (p *Packet) ReadPacketTo(w io.Writer) error {
 
 // data already has 4 bytes header
 // will modify data inplace
-func (p *Packet) WritePacket(data []byte) error {
+func (c *Conn) WritePacket(data []byte) error {
 	length := len(data) - 4
 
-	for length >= mysql.MaxPayloadLen {
+	for length >= MaxPayloadLen {
 		data[0] = 0xff
 		data[1] = 0xff
 		data[2] = 0xff
 
-		data[3] = p.Sequence
+		data[3] = c.Sequence
 
-		if n, err := p.Write(data[:4+mysql.MaxPayloadLen]); err != nil {
-			return mysql.ErrBadConn
-		} else if n != (4 + mysql.MaxPayloadLen) {
-			return mysql.ErrBadConn
+		if n, err := c.Write(data[:4+MaxPayloadLen]); err != nil {
+			return ErrBadConn
+		} else if n != (4 + MaxPayloadLen) {
+			return ErrBadConn
 		} else {
-			p.Sequence++
-			length -= mysql.MaxPayloadLen
-			data = data[mysql.MaxPayloadLen:]
+			c.Sequence++
+			length -= MaxPayloadLen
+			data = data[MaxPayloadLen:]
 		}
 	}
 
 	data[0] = byte(length)
 	data[1] = byte(length >> 8)
 	data[2] = byte(length >> 16)
-	data[3] = p.Sequence
+	data[3] = c.Sequence
 
-	if n, err := p.Write(data); err != nil {
-		return mysql.ErrBadConn
+	if n, err := c.Write(data); err != nil {
+		return ErrBadConn
 	} else if n != len(data) {
-		return mysql.ErrBadConn
+		return ErrBadConn
 	} else {
-		p.Sequence++
+		c.Sequence++
 		return nil
 	}
 }
 
-func (p *Packet) ResetSequence() {
-	p.Sequence = 0
+func (c *Conn) ResetSequence() {
+	c.Sequence = 0
 }
 
-func (p *Packet) Close() error {
-	p.Sequence = 0
-	if p.Conn != nil {
-		return p.Conn.Close()
+func (c *Conn) Close() error {
+	c.Sequence = 0
+	if c.Conn != nil {
+		return c.Conn.Close()
 	}
 	return nil
 }

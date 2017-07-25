@@ -2,8 +2,10 @@ package mysql
 
 import (
 	"fmt"
-	"errors"
+
+	"github.com/juju/errors"
 )
+
 var (
 	ErrBadConn       = errors.New("connection was bad")
 	ErrMalformPacket = errors.New("Malform packet error")

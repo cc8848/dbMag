@@ -8,7 +8,9 @@ import (
 	"io"
 	"runtime"
 	"strings"
+
 	"github.com/juju/errors"
+	"github.com/ngaut/log"
 	"utils"
 )
 
@@ -352,5 +354,5 @@ func init() {
 	}
 
 	// Disable highlight by default
-	//log.SetHighlighting(false)
+	log.SetHighlighting(false)
 }

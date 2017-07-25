@@ -6,6 +6,7 @@ import (
 
 	"github.com/juju/errors"
 	"utils"
+	"kingshard-master/core/hack"
 )
 
 func formatTextValue(value interface{}) ([]byte, error) {
@@ -118,7 +119,7 @@ func BuildSimpleTextResultset(names []string, values [][]interface{}) (*Resultse
 			if i == 0 {
 				field := &Field{}
 				r.Fields[j] = field
-				field.Name = utils.Slice(names[j])
+				field.Name = hack.Slice(names[j])
 
 				if err = formatField(field, value); err != nil {
 					return nil, errors.Trace(err)
@@ -164,7 +165,7 @@ func BuildSimpleBinaryResultset(names []string, values [][]interface{}) (*Result
 			if i == 0 {
 				field := &Field{}
 				r.Fields[j] = field
-				field.Name = utils.Slice(names[j])
+				field.Name = hack.Slice(names[j])
 
 				if err = formatField(field, value); err != nil {
 					return nil, errors.Trace(err)

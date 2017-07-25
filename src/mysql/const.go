@@ -8,7 +8,7 @@ const (
 
 var (
 	// maybe you can change for your specified name
-	ServerVersion string = "dbMag-server-1.1.1"
+	ServerVersion string = "go-mysql-0.1"
 )
 
 const (

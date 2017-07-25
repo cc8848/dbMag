@@ -8,8 +8,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
 	"github.com/juju/errors"
 	"utils"
+
+	"kingshard-master/core/hack"
 )
 
 // Like MySQL GTID Interval struct, [start, stop), left closed and right open
@@ -220,7 +223,7 @@ func (s *UUIDSet) AddInterval(in IntervalSlice) {
 }
 
 func (s *UUIDSet) String() string {
-	return utils.String(s.Bytes())
+	return hack.String(s.Bytes())
 }
 
 func (s *UUIDSet) encode(w io.Writer) {
@@ -396,7 +399,7 @@ func (s *MysqlGTIDSet) String() string {
 		sep = ","
 	}
 
-	return utils.String(buf.Bytes())
+	return hack.String(buf.Bytes())
 }
 
 func (s *MysqlGTIDSet) Encode() []byte {
