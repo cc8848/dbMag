@@ -6,7 +6,6 @@ import (
 
 	"github.com/juju/errors"
 	"utils"
-	"kingshard-master/core/hack"
 )
 
 type RowData []byte
