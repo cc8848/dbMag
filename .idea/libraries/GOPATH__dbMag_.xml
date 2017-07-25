@@ -1,0 +1,27 @@
+<component name="libraryTable">
+  <library name="GOPATH &lt;dbMag&gt;">
+    <CLASSES>
+      <root url="file://$USER_HOME$/gowork/src/kingshard-master" />
+      <root url="file://$USER_HOME$/gowork/src/gopkg.in" />
+      <root url="file://$USER_HOME$/gowork/src/github.com" />
+      <root url="file://$USER_HOME$/gowork/src/golang.org" />
+      <root url="file://$USER_HOME$/gowork/src/DatabaseManageServer" />
+      <root url="file://$USER_HOME$/gowork/src/demo" />
+      <root url="file://$USER_HOME$/gowork/src/testProject" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$USER_HOME$/gowork/src/kingshard-master" />
+      <root url="file://$USER_HOME$/gowork/src/gopkg.in" />
+      <root url="file://$USER_HOME$/gowork/src/github.com" />
+      <root url="file://$USER_HOME$/gowork/src/golang.org" />
+      <root url="file://$USER_HOME$/gowork/src/DatabaseManageServer" />
+      <root url="file://$USER_HOME$/gowork/src/demo" />
+      <root url="file://$USER_HOME$/gowork/src/testProject" />
+    </SOURCES>
+    <excluded>
+      <root url="file://$PROJECT_DIR$" />
+      <root url="file://$PROJECT_DIR$/../go-mysql" />
+    </excluded>
+  </library>
+</component>
