@@ -6,7 +6,6 @@ import (
 	"github.com/juju/errors"
 	. "mysql"
 	"utils"
-	"kingshard-master/core/hack"
 )
 
 func (c *Conn) readUntilEOF() (err error) {
@@ -175,7 +174,7 @@ func (c *Conn) readResultColumns(result *Result) (err error) {
 			return
 		}
 
-		result.FieldNames[hack.String(result.Fields[i].Name)] = i
+		result.FieldNames[utils.String(result.Fields[i].Name)] = i
 
 		i++
 	}

@@ -5,8 +5,8 @@ import (
 	"replication"
 	"os"
 	"mysql"
-	"github.com/juju/errors"
 	"golang.org/x/net/context"
+	"github.com/juju/errors"
 )
 func main() {
 

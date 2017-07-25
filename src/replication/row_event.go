@@ -802,6 +802,7 @@ func decodeBlob(data []byte, meta uint16) (v []byte, n int, err error) {
 }
 
 func (e *RowsEvent) Dump(w io.Writer) {
+
 	fmt.Fprintf(w, "TableID: %d\n", e.TableID)
 	fmt.Fprintf(w, "Flags: %d\n", e.Flags)
 	fmt.Fprintf(w, "Column count: %d\n", e.ColumnCount)

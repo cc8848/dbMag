@@ -11,8 +11,6 @@ import (
 
 	"github.com/juju/errors"
 	"utils"
-
-	"kingshard-master/core/hack"
 )
 
 // Like MySQL GTID Interval struct, [start, stop), left closed and right open
@@ -223,7 +221,7 @@ func (s *UUIDSet) AddInterval(in IntervalSlice) {
 }
 
 func (s *UUIDSet) String() string {
-	return hack.String(s.Bytes())
+	return utils.String(s.Bytes())
 }
 
 func (s *UUIDSet) encode(w io.Writer) {
@@ -399,7 +397,7 @@ func (s *MysqlGTIDSet) String() string {
 		sep = ","
 	}
 
-	return hack.String(buf.Bytes())
+	return utils.String(buf.Bytes())
 }
 
 func (s *MysqlGTIDSet) Encode() []byte {
