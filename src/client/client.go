@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"bytes"
@@ -517,6 +517,25 @@ func (c *ClientConn)exec(query string)(*mysql.Result,error)  {
 	return c.readResult(false)
 }
 
+
+func (c *ClientConn) writeCommandUint32(command byte, arg uint32) error {
+	c.Packet.ResetSequence()
+
+	return c.WritePacket([]byte{
+		0x05, //5 bytes long
+		0x00,
+		0x00,
+		0x00, //sequence
+
+		command,
+
+		byte(arg),
+		byte(arg >> 8),
+		byte(arg >> 16),
+		byte(arg >> 24),
+	})
+}
+
 //执行命令入口
 func (c *ClientConn)Execute(command string,args...interface{}) (*mysql.Result,error)  {
 
@@ -524,6 +543,13 @@ func (c *ClientConn)Execute(command string,args...interface{}) (*mysql.Result,er
 		return c.exec(command)
 	}else {
 
-
+		if s,err:=c.Prepare(command);err!=nil{
+			return nil,err
+		}else{
+			var r *mysql.Result
+			r,err=s.Execute(args...)
+			s.Close()
+			return r,err
+		}
 	}
 }
