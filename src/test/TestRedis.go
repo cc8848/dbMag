@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/go-redis/redis"
+
 	"fmt"
-	"client"
+	"github.com/go-redis/redis"
 )
 
 //func main(){
@@ -15,32 +15,32 @@ import (
 
 //	c.Do("SET","username","nick")
 
-
 //	username,err:=redis.String(c.Do("GET","username"))
 //	fmt.Println("username:",username)
 //}
 
-func GetRedisConn( redisHost string,passwd string) *redis.Client {
+func GetRedisConn(redisHost string, passwd string) *redis.Client {
 	client := redis.NewClient(&redis.Options{
 		Addr:     redisHost,
 		Password: passwd, // no password set
-		DB:       0,  // use default DB
+		DB:       0,      // use default DB
 	})
-	return  client
+	return client
 }
 func main() {
-		var conn *redis.Client
-		addr:="localhost:6379"
-		password:=""
-		conn=GetRedisConn(addr,password)
+	var conn *redis.Client
+	addr := "localhost:6379"
+	password := ""
+	conn = GetRedisConn(addr, password)
 
-		pong, err := conn.Ping().Result()
-		fmt.Println(pong, err)
-		// Output: PONG <nil>
-		key:="username"
-		value:="ghc"
-		conn.Set(key,value,0)
+	pong, err := conn.Ping().Result()
+	fmt.Println(pong, err)
+	// Output: PONG <nil>
+	key := "username"
+	value := "ghc"
+	conn.Set(key, value, 0)
 }
+//http://www.jianshu.com/p/7e22ad3a9061
 
 func ExampleClient(client *redis.Client) {
 	err := client.Set("key", "value", 0).Err()
