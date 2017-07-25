@@ -20,19 +20,29 @@ import (
 //	fmt.Println("username:",username)
 //}
 
-func main() {
+func GetRedisConn( redisHost string,passwd string) *redis.Client {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
+		Addr:     redisHost,
+		Password: passwd, // no password set
 		DB:       0,  // use default DB
 	})
+	return  client
+}
+func main() {
+		var conn *redis.Client
+		addr:="localhost:6379"
+		password:=""
+		conn=GetRedisConn(addr,password)
 
-	pong, err := client.Ping().Result()
-	fmt.Println(pong, err)
-	// Output: PONG <nil>
+		pong, err := conn.Ping().Result()
+		fmt.Println(pong, err)
+		// Output: PONG <nil>
+		key:="username"
+		value:="ghc"
+		conn.Set(key,value,0)
 }
 
-func ExampleClient() {
+func ExampleClient(client *redis.Client) {
 	err := client.Set("key", "value", 0).Err()
 	if err != nil {
 		panic(err)
