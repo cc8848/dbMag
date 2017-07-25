@@ -17,7 +17,7 @@ import (
 客户端链接属性
 */
 type ClientConn struct {
-	*packet.Conn
+	*packet.Packet
 	user      string
 	password  string
 	db        string
@@ -157,13 +157,13 @@ func (c *ClientConn) writeAuthHandShake() error {
 		}
 
 		// Switch to TLS
-		tlsConn := tls.Client(c.Conn.Conn, c.TLSConfig)
+		tlsConn := tls.Client(c.Packet.Conn, c.TLSConfig)
 		if err := tlsConn.Handshake(); err != nil {
 			return err
 		}
 
 		currentSequence := c.Sequence
-		c.Conn = packet.NewConn(tlsConn)
+		c.Packet = packet.NewConn(tlsConn)
 		c.Sequence = currentSequence
 	}
 
@@ -349,4 +349,181 @@ func (c *ClientConn) handleOKPacket(data []byte) (*mysql.Result, error) {
 
 	//skip info
 	return r, nil
+}
+
+func (c *ClientConn)writeCommand(command byte) error  {
+
+	c.Packet.ResetSequence()
+	return c.WritePacket([]byte{0x01,0x00,0x00,0x00,command})
+}
+
+/*
+发生字符串命令
+*/
+func (c *ClientConn)writeCommandStr(command byte,args string) error  {
+
+	c.Packet.ResetSequence()
+	length:=len(args)+1
+
+	data:=make([]byte,length+4)
+	data[4]=command
+
+	copy(data[5:],args)
+	return c.WritePacket(data)
+}
+
+
+
+func (c *ClientConn)readResultColumns(result *mysql.Result) (err error){
+
+	var i int =0
+	var data []byte
+
+	for{
+		data,err=c.ReadPacket()
+		if err!=nil{
+			return
+		}
+
+		//EOF packet
+		if c.isEOFPacket(data){
+			if c.capability&mysql.CLIENT_PROTOCOL_41 >0{
+				result.Status=binary.LittleEndian.Uint16(data[3:])
+				c.status=result.Status
+			}
+
+			if i!=len(result.Fields){
+				err=mysql.ErrMalformPacket
+			}
+
+			return
+		}
+
+		result.Fields[i],err=mysql.FieldData(data).Parse()
+		if err!=nil{
+			return
+		}
+
+		result.FieldNames[utils.String(result.Fields[i].Name)]=i
+		i++
+	}
+}
+
+
+func (c *ClientConn)readResultset(data []byte,bl bool)(*mysql.Result,error){
+
+	result:=&mysql.Result{
+
+		Status:0,
+		InsertId:0,
+		AffectedRows:0,
+		Resultset:&mysql.Resultset{},
+	}
+
+	count,_,n:=mysql.LengthEncodedInt(data)
+	if n-len(data) !=0{
+		return nil,mysql.ErrMalformPacket
+	}
+
+	result.Fields=make([]*mysql.Field,count)
+	result.FieldNames=make(map[string]int,count)
+
+	if err:=c.readResultColumns(result);err!=nil{
+		return nil,err
+	}
+
+	if err:=c.readResultRows(result,bl);err!=nil{
+		return nil,err
+	}
+
+	return result,nil
+}
+
+func (c *ClientConn) readResultRows(result *mysql.Result, isBinary bool) (err error) {
+	var data []byte
+
+	for {
+		data, err = c.ReadPacket()
+
+		if err != nil {
+			return
+		}
+
+		// EOF Packet
+		if c.isEOFPacket(data) {
+			if c.capability&mysql.CLIENT_PROTOCOL_41 > 0 {
+				//result.Warnings = binary.LittleEndian.Uint16(data[1:])
+				//todo add strict_mode, warning will be treat as error
+				result.Status = binary.LittleEndian.Uint16(data[3:])
+				c.status = result.Status
+			}
+
+			break
+		}
+
+		result.RowDatas = append(result.RowDatas, data)
+	}
+
+	result.Values = make([][]interface{}, len(result.RowDatas))
+
+	for i := range result.Values {
+		result.Values[i], err = result.RowDatas[i].Parse(result.Fields, isBinary)
+
+		if err != nil {
+			return  err
+		}
+	}
+
+	return nil
+}
+
+
+func (c *ClientConn)readResult(bl bool)(*mysql.Result,error)  {
+
+	data,err:=c.ReadPacket()
+	if err!=nil{
+		return nil,err
+	}
+
+	if data[0]==mysql.OK_HEADER{
+		return c.handleOKPacket(data)
+	}else if data[0]==mysql.ERR_HEADER{
+		return nil,c.handleErrorPacket(data)
+	}else if data[0]==mysql.LocalInFile_HEADER{
+		return nil,mysql.ErrMalformPacket
+	}
+
+	return c.readResultset(data,bl)
+}
+
+
+func(c *ClientConn)Ping()error{
+
+	if err:=c.writeCommand(mysql.COM_PING);err!=nil{
+		return err
+	}
+	if _,err:=c.readOK();err!=nil{
+		return err
+	}
+
+	return nil
+}
+
+func (c *ClientConn)exec(query string)(*mysql.Result,error)  {
+	if err:=c.writeCommandStr(mysql.COM_QUERY,query);err!=nil{
+		return nil,err
+	}
+
+	return c.readResult(false)
+}
+
+//执行命令入口
+func (c *ClientConn)Execute(command string,args...interface{}) (*mysql.Result,error)  {
+
+	if len(args)==0{
+		return c.exec(command)
+	}else {
+
+
+	}
 }
