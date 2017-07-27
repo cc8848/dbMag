@@ -42,7 +42,7 @@ func main() {
 
 //http://www.jianshu.com/p/7e22ad3a9061
 //http://siddontang.com/categories/go/
-http://faemalia.com/Technology/mysql-internals.pdf
+//http://faemalia.com/Technology/mysql-internals.pdf
 func ExampleClient(client *redis.Client) {
 	err := client.Set("key", "value", 0).Err()
 	if err != nil {
