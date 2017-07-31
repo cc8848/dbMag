@@ -4,23 +4,24 @@ import (
 	"io/ioutil"
 
 	"fmt"
-	"github.com/gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
+
 type Config struct {
-	Addr string `yaml:"addr"`
-	Logpath string `yaml:"logpath"`
+	Addr     string `yaml:"addr"`
+	Logpath  string `yaml:"logpath"`
 	Loglevel string `yaml:"loglevel"`
-	Dbaddr string `yaml:"dbaddr"`
-	Dbusr string `yaml:"dbusr"`
+	Dbaddr   string `yaml:"dbaddr"`
+	Dbusr    string `yaml:"dbusr"`
 	Dbpasswd string `yaml:"dbpasswd"`
-	Dbport uint `yaml:dbport`
- }
+	Dbport   uint   `yaml:dbport`
+}
 
-func  ParseConfig(configfile string )  (*Config, error) {
+func ParseConfig(configfile string) (*Config, error) {
 
-	data,err:=ioutil.ReadFile(configfile)
-	if err!=nil{
-		fmt.Print("parse configure file error:",err)
+	data, err := ioutil.ReadFile(configfile)
+	if err != nil {
+		fmt.Print("parse configure file error:", err)
 	}
 	var cfg Config
 
