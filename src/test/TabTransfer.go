@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 	"bytes"
+	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type TableInfo struct {
@@ -17,16 +17,16 @@ type DbConn struct {
 	host   string
 	user   string
 	passwd string
-	db string
+	db     string
 	port   uint32
 }
 
 type TableInterFace interface {
-	GetData(tb TableInfo)
+	GetData(tb TableInfo, data interface{})
 	SendData(tb TableInfo)
 }
 
-func (conn *DbConn) GetConn() (*sql.DB,error) {
+func (conn *DbConn) GetConn() (*sql.DB, error) {
 	var dataSourceName bytes.Buffer
 	dataSourceName.WriteString(conn.user)
 	dataSourceName.WriteString(":")
@@ -37,25 +37,29 @@ func (conn *DbConn) GetConn() (*sql.DB,error) {
 	dataSourceName.WriteString(")/")
 	dataSourceName.WriteString(conn.db)
 	dataSourceName.WriteString("/charset=utf8")
-	db,err:=sql.Open("tcp",dataSourceName.String())
-	if err!=nil{
-		return nil,err
+	db, err := sql.Open("tcp", dataSourceName.String())
+	if err != nil {
+		return nil, err
 	}
 
-	return db,nil
+	return db, nil
 }
 
-func GetData(tb TableInfo) error {
+func GetData(tb TableInfo,data interface{}) error {
 
-	db,err:=tb.dbconn.GetConn()
-	if err!=nil{
+	db, err := tb.dbconn.GetConn()
+	if err != nil {
 		return err
 	}
-	db.Query("SELECT  max(id) from "+tb.name)
+	rows,err:=db.Query("SELECT  max(id) from " + tb.name)
+
+	rows.Scan(&tb.idval)
+
+
 	return nil
 }
 
-
 func main() {
+
 	fmt.Println("hello world")
 }
