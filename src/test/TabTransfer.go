@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"strings"
 )
 
 type TableInfo struct {
@@ -122,24 +123,72 @@ func SendData(tb *TableInfo, pip chan *ota_pre_record ) error {
 */
 func GetData(tb *TableInfo,pip chan *ota_pre_record) error {
 
-	ret:=<-pip
-	fmt.Println("info:",ret)
+	ota_pre:=<-pip
+
+	db,err:=tb.dbconn.GetConn()
+	if err!=nil{
+		return nil
+	}
+
+	var sqlbuf bytes.Buffer
+	sqlbuf.WriteString("INSERT INTO ")
+	sqlbuf.WriteString(tb.name)
+	sqlbuf.WriteString("(")
+	sqlbuf.WriteString(tb.colum)
+	sqlbuf.WriteString(") values(")
+
+	colunArry:=strings.Split(tb.colum,",")
+	size:=len(colunArry)
+	for i:=0;i<size;i++{
+
+		if i == size-1 {
+			sqlbuf.WriteString("?")
+		}else{
+			sqlbuf.WriteString("?,")
+		}
+	}
+	sqlbuf.WriteString(")")
+	fmt.Println(sqlbuf.String())
+
+	stmt, err :=db.Prepare(sqlbuf.String())
+	res,err:=stmt.Exec(ota_pre.mid,ota_pre.device_id,ota_pre.product_id,ota_pre.delta_id,ota_pre.origin_version,
+	ota_pre.now_version,
+	ota_pre.check_time,
+	ota_pre.download_time,
+	ota_pre.update_time,
+	ota_pre.ip,
+	ota_pre.province,
+	ota_pre.city,
+	ota_pre.networkType,
+	ota_pre.status,ota_pre.origin_type,
+	ota_pre.error_code,
+	ota_pre.create_time,
+	ota_pre.update_time)
+
+	fmt.Println("Affect Rows:",res)
+	fmt.Println("info:",ota_pre.mid,ota_pre.device_id)
 	return nil
 }
 
 
 func main() {
 
+	//缓冲区
 	ch:=make( chan *ota_pre_record,10)
-	conn:=DbConn{"180.97.81.42","root","123","dbconfig","33068"}
-	tbinfo:=TableInfo{dbconn:conn,name:"ota_pre_record",colum:"mid,device_id,product_id,delta_id,origin_version,now_version,check_time,download_time,upgrade_time,ip,province,city,networkType,status,origin_type,error_code,create_time,update_time"}
 
-	SendData(&tbinfo,ch)
+	//数据源1
+	connSrc:=DbConn{"180.97.81.42","root","123","dbconfig","33068"}
+	tbinfoSrc:=TableInfo{dbconn:connSrc,name:"ota_pre_record",colum:"mid,device_id,product_id,delta_id,origin_version,now_version,check_time,download_time,upgrade_time,ip,province,city,networkType,status,origin_type,error_code,create_time,update_time"}
 
+	SendData(&tbinfoSrc,ch)
 
-	GetData(&tbinfo,ch)
+	//数据源2
+	connDst:=DbConn{"180.97.81.42","root","123","dbconfig","33069"}
+	tbinfoDst:=TableInfo{dbconn:connDst,name:"ota_pre_record",colum:"mid,device_id,product_id,delta_id,origin_version,now_version,check_time,download_time,upgrade_time,ip,province,city,networkType,status,origin_type,error_code,create_time,update_time"}
 
+	GetData(&tbinfoSrc,ch)
 
-	fmt.Println("max id values is:",tbinfo.idval)
+	SendData(&tbinfoDst,ch)
+
 	fmt.Println("hello world")
 }
