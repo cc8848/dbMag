@@ -75,21 +75,23 @@ func (conn *DbConn) GetConn() (*sql.DB, error) {
 /*
 将TableInfo 中的数据发送到缓冲区 data中
 */
-func SendData(tb *TableInfo, pip chan *ota_pre_record,maxid int ) error {
+func SendData(tb *TableInfo, pip chan <-*ota_pre_record,maxid int ) error {
 
 	db, err := tb.dbconn.GetConn()
 	if err!=nil{
 		return err
 	}
 
-	for i:=0;i<maxid;i+=5{
-		j:=i+5
-		sql:="select "+tb.colum+" from "+tb.name+" where id>"+strconv.Itoa(i) +" and id<"+strconv.Itoa(j)
-		//fmt.Println("sql string:",sql)
+	for i:=0;i<maxid;i+=50{
+		j:=i+50
+		sql:="select "+tb.colum+" from "+tb.name+" where id>"+strconv.Itoa(i) +" and id<="+strconv.Itoa(j)
+		fmt.Println("sql string:",sql)
 		rows,err:=db.Query(sql)
+		defer rows.Close()
 		if err!=nil{
 			fmt.Println("querey error:",err)
 		}
+
 		for rows.Next()  {
 			ota_pre := new(ota_pre_record)
 			rows.Scan(&ota_pre.mid,
@@ -113,7 +115,7 @@ func SendData(tb *TableInfo, pip chan *ota_pre_record,maxid int ) error {
 			)
 
 			pip<-ota_pre
-			fmt.Println("send to buffer message:",ota_pre)
+			//fmt.Println("send to buffer message:",ota_pre)
 		}
 
 	}
@@ -126,7 +128,7 @@ func SendData(tb *TableInfo, pip chan *ota_pre_record,maxid int ) error {
 
 获取data缓冲区中的 TableInfo数据 发送到另外一个数据源
 */
-func GetData(tb *TableInfo,pip chan *ota_pre_record) error {
+func GetData(tb *TableInfo,pip <-chan *ota_pre_record) error {
 
 
 	for true{
@@ -181,7 +183,7 @@ func GetData(tb *TableInfo,pip chan *ota_pre_record) error {
 func main() {
 
 	//缓冲区
-	ch:=make( chan *ota_pre_record,5)
+	ch:=make( chan *ota_pre_record,50)
 
 	//数据源1s
 	connSrc:=DbConn{"180.97.81.42","root","123","dbconfig","33068"}
@@ -207,7 +209,7 @@ func main() {
 
 
 	go GetData(&tbinfoDst,ch)
-	time.Sleep(300 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	fmt.Println("hello world")
 }
