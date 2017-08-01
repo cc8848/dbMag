@@ -85,7 +85,7 @@ func SendData(tb *TableInfo, pip chan *ota_pre_record,maxid int ) error {
 	for i:=0;i<maxid;i+=5{
 		j:=i+5
 		sql:="select "+tb.colum+" from "+tb.name+" where id>"+strconv.Itoa(i) +" and id<"+strconv.Itoa(j)
-
+		//fmt.Println("sql string:",sql)
 		rows,err:=db.Query(sql)
 		if err!=nil{
 			fmt.Println("querey error:",err)
@@ -111,7 +111,9 @@ func SendData(tb *TableInfo, pip chan *ota_pre_record,maxid int ) error {
 				&ota_pre.create_time,
 				&ota_pre.update_time,
 			)
+
 			pip<-ota_pre
+			fmt.Println("send to buffer message:",ota_pre)
 		}
 
 	}
@@ -126,51 +128,52 @@ func SendData(tb *TableInfo, pip chan *ota_pre_record,maxid int ) error {
 */
 func GetData(tb *TableInfo,pip chan *ota_pre_record) error {
 
-	for i := 0; i < 5; i++{
 
-	ota_pre:=<-pip
-	fmt.Println("mid:",ota_pre.mid)
-	db,err:=tb.dbconn.GetConn()
+	for true{
+		ota_pre:=<-pip
+		fmt.Println("revice from message :", ota_pre)
+		db,err:=tb.dbconn.GetConn()
 
-	if err!=nil{
-		return nil
-	}
-	var sqlbuf bytes.Buffer
-	sqlbuf.WriteString("INSERT INTO ")
-	sqlbuf.WriteString(tb.name)
-	sqlbuf.WriteString("(")
-	sqlbuf.WriteString(tb.colum)
-	sqlbuf.WriteString(") values(")
-	colunArry:=strings.Split(tb.colum,",")
-	size:=len(colunArry)
-	for i:=0;i<size;i++{
-
-		if i == size-1 {
-			sqlbuf.WriteString("?")
-		}else{
-			sqlbuf.WriteString("?,")
+		if err!=nil{
+			return nil
 		}
-	}
-	sqlbuf.WriteString(")")
-	stmt, err :=db.Prepare(sqlbuf.String())
-	res,err:=stmt.Exec(ota_pre.mid,ota_pre.device_id,ota_pre.product_id,ota_pre.delta_id,ota_pre.origin_version,
-	ota_pre.now_version,
-	ota_pre.check_time,
-	ota_pre.download_time,
-	ota_pre.update_time,
-	ota_pre.ip,
-	ota_pre.province,
-	ota_pre.city,
-	ota_pre.networkType,
-	ota_pre.status,
-	ota_pre.origin_type,
-	ota_pre.error_code,
-	ota_pre.create_time,
-	ota_pre.update_time)
+		var sqlbuf bytes.Buffer
+		sqlbuf.WriteString("INSERT INTO ")
+		sqlbuf.WriteString(tb.name)
+		sqlbuf.WriteString("(")
+		sqlbuf.WriteString(tb.colum)
+		sqlbuf.WriteString(") values(")
+		colunArry:=strings.Split(tb.colum,",")
+		size:=len(colunArry)
+		for i:=0;i<size;i++{
 
-	fmt.Println(res.RowsAffected())
+			if i == size-1 {
+				sqlbuf.WriteString("?")
+			}else{
+				sqlbuf.WriteString("?,")
+			}
+		}
+		sqlbuf.WriteString(")")
+		stmt, err :=db.Prepare(sqlbuf.String())
+		stmt.Exec(ota_pre.mid,ota_pre.device_id,ota_pre.product_id,ota_pre.delta_id,ota_pre.origin_version,
+			ota_pre.now_version,
+			ota_pre.check_time,
+			ota_pre.download_time,
+			ota_pre.update_time,
+			ota_pre.ip,
+			ota_pre.province,
+			ota_pre.city,
+			ota_pre.networkType,
+			ota_pre.status,
+			ota_pre.origin_type,
+			ota_pre.error_code,
+			ota_pre.create_time,
+			ota_pre.update_time)
 
+		//fmt.Println(res.RowsAffected())
 	}
+
+
 	return nil
 }
 
@@ -204,7 +207,7 @@ func main() {
 
 
 	go GetData(&tbinfoDst,ch)
-	time.Sleep(30 * time.Second)
+	time.Sleep(300 * time.Second)
 
 	fmt.Println("hello world")
 }
