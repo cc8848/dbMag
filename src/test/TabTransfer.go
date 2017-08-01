@@ -24,7 +24,7 @@ type DbConn struct {
 
 type TableInterFace interface {
 	GetData(tb *TableInfo, data interface{})
-	SendData(tb *TableInfo)
+	SendData(tb *TableInfo,data interface{})
 }
 
 func (conn *DbConn) GetConn() (*sql.DB, error) {
@@ -51,7 +51,7 @@ func (conn *DbConn) GetConn() (*sql.DB, error) {
 /*
 将TableInfo 中的数据发送到缓冲区 data中
 */
-func SendData(tb *TableInfo,data interface{}) error {
+func SendData(tb *TableInfo, pip chan ota_pre_record ) error {
 
 	db, err := tb.dbconn.GetConn()
 
@@ -69,6 +69,7 @@ func SendData(tb *TableInfo,data interface{}) error {
 
 
 
+
 	return nil
 }
 
@@ -76,17 +77,37 @@ func SendData(tb *TableInfo,data interface{}) error {
 
 获取data缓冲区中的 TableInfo数据
 */
-func GetData(tb *TableInfo,data interface{}) error {
+func GetData(tb *TableInfo,pip chan ota_pre_record) error {
 
 
 
 	return nil
 }
 
+type ota_pre_record  struct {
+	mid string
+	device_id string
+	product_id string
+	delta_id string
+	origin_version string
+	now_version string
+	check_time string
+	download_time string
+	upgrade_time string
+	ip string
+	province string
+	city string
+	networkType string
+	status string
+	origin_type string
+	error_code string
+	create_time string
+	update_time string
+}
 
 func main() {
 
-	ch:=make( chan int,10)
+	ch:=make( chan ota_pre_record,10)
 	conn:=DbConn{"180.97.81.42","root","123","dbconfig","33068"}
 	tbinfo:=TableInfo{dbconn:conn,name:"ota_pre_record"}
 
