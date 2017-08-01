@@ -6,6 +6,8 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
+	"time"
+	"strconv"
 )
 
 type TableInfo struct {
@@ -73,47 +75,48 @@ func (conn *DbConn) GetConn() (*sql.DB, error) {
 /*
 将TableInfo 中的数据发送到缓冲区 data中
 */
-func SendData(tb *TableInfo, pip chan *ota_pre_record ) error {
+func SendData(tb *TableInfo, pip chan *ota_pre_record,maxid int ) error {
 
 	db, err := tb.dbconn.GetConn()
-
-	if err != nil {
+	if err!=nil{
 		return err
 	}
-	rows,err:=db.Query("SELECT  max(id) from ota_pre_record" )
+
+	for i:=0;i<maxid;i+=5{
+		j:=i+5
+		sql:="select "+tb.colum+" from "+tb.name+" where id>"+strconv.Itoa(i) +" and id<"+strconv.Itoa(j)
+
+		rows,err:=db.Query(sql)
+		if err!=nil{
+			fmt.Println("querey error:",err)
+		}
+		for rows.Next()  {
+			ota_pre := new(ota_pre_record)
+			rows.Scan(&ota_pre.mid,
+				&ota_pre.device_id,
+				&ota_pre.product_id,
+				&ota_pre.delta_id,
+				&ota_pre.origin_version,
+				&ota_pre.now_version,
+				&ota_pre.check_time,
+				&ota_pre.download_time,
+				&ota_pre.update_time,
+				&ota_pre.ip,
+				&ota_pre.province,
+				&ota_pre.city,
+				&ota_pre.networkType,
+				&ota_pre.status,
+				&ota_pre.origin_type,
+				&ota_pre.error_code,
+				&ota_pre.create_time,
+				&ota_pre.update_time,
+			)
+			pip<-ota_pre
+		}
+
+	}
 
 
-	for rows.Next(){
-		var maxid uint32
-		rows.Scan(&maxid)
-		tb.idval=maxid
-	}
-	sql:="select "+tb.colum+" from "+tb.name+" where id>0 and id<10"
-	//fmt.Println(sql)
-	rows2,err:=db.Query(sql)
-	for rows2.Next()  {
-		ota_pre := new(ota_pre_record)
-		rows2.Scan(&ota_pre.mid,
-			&ota_pre.device_id,
-			&ota_pre.product_id,
-			&ota_pre.delta_id,
-			&ota_pre.origin_version,
-			&ota_pre.now_version,
-			&ota_pre.check_time,
-			&ota_pre.download_time,
-			&ota_pre.update_time,
-			&ota_pre.ip,
-			&ota_pre.province,
-			&ota_pre.city,
-			&ota_pre.networkType,
-			&ota_pre.status,
-			&ota_pre.origin_type,
-			&ota_pre.error_code,
-			&ota_pre.create_time,
-			&ota_pre.update_time,
-		)
-		pip<-ota_pre
-	}
 	return nil
 }
 
@@ -123,14 +126,15 @@ func SendData(tb *TableInfo, pip chan *ota_pre_record ) error {
 */
 func GetData(tb *TableInfo,pip chan *ota_pre_record) error {
 
+	for i := 0; i < 5; i++{
+
 	ota_pre:=<-pip
-	fmt.Println("origin_version:",ota_pre.origin_version)
+	fmt.Println("mid:",ota_pre.mid)
 	db,err:=tb.dbconn.GetConn()
 
 	if err!=nil{
 		return nil
 	}
-
 	var sqlbuf bytes.Buffer
 	sqlbuf.WriteString("INSERT INTO ")
 	sqlbuf.WriteString(tb.name)
@@ -165,6 +169,8 @@ func GetData(tb *TableInfo,pip chan *ota_pre_record) error {
 	ota_pre.update_time)
 
 	fmt.Println(res.RowsAffected())
+
+	}
 	return nil
 }
 
@@ -172,14 +178,24 @@ func GetData(tb *TableInfo,pip chan *ota_pre_record) error {
 func main() {
 
 	//缓冲区
-	ch:=make( chan *ota_pre_record,10)
+	ch:=make( chan *ota_pre_record,5)
 
-	//数据源1
+	//数据源1s
 	connSrc:=DbConn{"180.97.81.42","root","123","dbconfig","33068"}
 	tbinfoSrc:=TableInfo{dbconn:connSrc,name:"ota_pre_record",colum:"mid,device_id,product_id,delta_id,origin_version,now_version,check_time,download_time,upgrade_time,ip,province,city,networkType,status,origin_type,error_code,create_time,update_time"}
+	db, err := tbinfoSrc.dbconn.GetConn()
 
+	if err != nil {
+		fmt.Println("connection source database error:",err)
+	}
+	rows,err:=db.Query("SELECT  max(id) from "+tbinfoSrc.name )
+	var maxid int
+	for rows.Next(){
+		rows.Scan(&maxid)
 
-	 SendData(&tbinfoSrc,ch)
+	}
+
+	go SendData(&tbinfoSrc,ch,maxid)
 
 	//数据源2
 	connDst:=DbConn{"180.97.81.42","root","123","dbconfig","33069"}
@@ -188,7 +204,7 @@ func main() {
 
 
 	go GetData(&tbinfoDst,ch)
-
+	time.Sleep(30 * time.Second)
 
 	fmt.Println("hello world")
 }
