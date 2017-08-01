@@ -97,7 +97,7 @@ func SendData(tb *TableInfo, pip chan *ota_pre_record ) error {
 			&ota_pre.device_id,
 			&ota_pre.product_id,
 			&ota_pre.delta_id,
-			&ota_pre.origin_type,
+			&ota_pre.origin_version,
 			&ota_pre.now_version,
 			&ota_pre.check_time,
 			&ota_pre.download_time,
@@ -123,18 +123,13 @@ func SendData(tb *TableInfo, pip chan *ota_pre_record ) error {
 */
 func GetData(tb *TableInfo,pip chan *ota_pre_record) error {
 
-
-
 	ota_pre:=<-pip
-
+	fmt.Println("origin_version:",ota_pre.origin_version)
 	db,err:=tb.dbconn.GetConn()
 
 	if err!=nil{
 		return nil
 	}
-
-
-
 
 	var sqlbuf bytes.Buffer
 	sqlbuf.WriteString("INSERT INTO ")
@@ -142,7 +137,6 @@ func GetData(tb *TableInfo,pip chan *ota_pre_record) error {
 	sqlbuf.WriteString("(")
 	sqlbuf.WriteString(tb.colum)
 	sqlbuf.WriteString(") values(")
-
 	colunArry:=strings.Split(tb.colum,",")
 	size:=len(colunArry)
 	for i:=0;i<size;i++{
@@ -154,28 +148,23 @@ func GetData(tb *TableInfo,pip chan *ota_pre_record) error {
 		}
 	}
 	sqlbuf.WriteString(")")
-	fmt.Println(sqlbuf.String())
-
 	stmt, err :=db.Prepare(sqlbuf.String())
+	res,err:=stmt.Exec(ota_pre.mid,ota_pre.device_id,ota_pre.product_id,ota_pre.delta_id,ota_pre.origin_version,
+	ota_pre.now_version,
+	ota_pre.check_time,
+	ota_pre.download_time,
+	ota_pre.update_time,
+	ota_pre.ip,
+	ota_pre.province,
+	ota_pre.city,
+	ota_pre.networkType,
+	ota_pre.status,
+	ota_pre.origin_type,
+	ota_pre.error_code,
+	ota_pre.create_time,
+	ota_pre.update_time)
 
-	res,err:=stmt.Exec(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1)
-
-	//res,err:=stmt.Exec(ota_pre.mid,ota_pre.device_id,ota_pre.product_id,ota_pre.delta_id,ota_pre.origin_version,
-	//ota_pre.now_version,
-	//ota_pre.check_time,
-	//ota_pre.download_time,
-	//ota_pre.update_time,
-	//ota_pre.ip,
-	//ota_pre.province,
-	//ota_pre.city,
-	//ota_pre.networkType,
-	//ota_pre.status,ota_pre.origin_type,
-	//ota_pre.error_code,
-	//ota_pre.create_time,
-	//ota_pre.update_time)
-
-	fmt.Println("Affect Rows:",res)
-	fmt.Println("info:",ota_pre.mid,ota_pre.device_id)
+	fmt.Println(res.RowsAffected())
 	return nil
 }
 
@@ -189,16 +178,17 @@ func main() {
 	connSrc:=DbConn{"180.97.81.42","root","123","dbconfig","33068"}
 	tbinfoSrc:=TableInfo{dbconn:connSrc,name:"ota_pre_record",colum:"mid,device_id,product_id,delta_id,origin_version,now_version,check_time,download_time,upgrade_time,ip,province,city,networkType,status,origin_type,error_code,create_time,update_time"}
 
-	SendData(&tbinfoSrc,ch)
+
+	 SendData(&tbinfoSrc,ch)
 
 	//数据源2
 	connDst:=DbConn{"180.97.81.42","root","123","dbconfig","33069"}
 
 	tbinfoDst:=TableInfo{dbconn:connDst,name:"ota_pre_record",colum:"mid,device_id,product_id,delta_id,origin_version,now_version,check_time,download_time,upgrade_time,ip,province,city,networkType,status,origin_type,error_code,create_time,update_time"}
 
-	//db,_:=tbinfoDst.dbconn.GetConn()
-	//db.Exec("insert into ota_pre_record(mid) values(111)")
-	GetData(&tbinfoDst,ch)
+
+	go GetData(&tbinfoDst,ch)
+
 
 	fmt.Println("hello world")
 }
