@@ -87,8 +87,9 @@ func SendData(tb *TableInfo, pip chan *ota_pre_record ) error {
 		rows.Scan(&maxid)
 		tb.idval=maxid
 	}
-
-	rows2,err:=db.Query("select "+tb.colum+" from "+tb.name," where id>0 and id<20")
+	sql:="select "+tb.colum+" from "+tb.name+" where id>0 and id<10"
+	fmt.Println(sql)
+	rows2,err:=db.Query(sql)
 	for rows2.Next()  {
 		ota_pre := new(ota_pre_record)
 		rows.Scan(&ota_pre.mid,
@@ -129,14 +130,16 @@ func GetData(tb *TableInfo,pip chan *ota_pre_record) error {
 
 func main() {
 
-	ch:=make( chan ota_pre_record,10)
+	ch:=make( chan *ota_pre_record,10)
 	conn:=DbConn{"180.97.81.42","root","123","dbconfig","33068"}
 
 
 	tbinfo:=TableInfo{dbconn:conn,name:"ota_pre_record",colum:"mid,device_id,product_id,delta_id,origin_version,now_version,check_time,download_time,upgrade_time,ip,province,city,networkType,status,origin_type,error_code,create_time,update_time"}
 
-	GetData(&tbinfo,ch)
+	SendData(&tbinfo,ch)
 
+	ret:=<-ch
+	fmt.Println(ret)
 	fmt.Println("max id values is:",tbinfo.idval)
 	fmt.Println("hello world")
 }
