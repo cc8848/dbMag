@@ -1,21 +1,19 @@
 package server
 
 import (
-	"net"
 	"fmt"
+	"log"
+	"net"
 	"os"
 	"time"
-	"log"
 
 	"errors"
 )
 
-
 type Server struct {
-	cm     *ConnectionManager
-	socket *net.TCPListener
+	cm        *ConnectionManager
+	socket    *net.TCPListener
 	isrunning bool
-
 }
 
 func New(port int) (*Server, error) {
@@ -34,7 +32,7 @@ func New(port int) (*Server, error) {
 	return s, nil
 }
 
-func NewFromFD( fd uintptr) (*Server, error) {
+func NewFromFD(fd uintptr) (*Server, error) {
 	s := &Server{cm: NewConnectionManager()}
 
 	file := os.NewFile(fd, "/tmp/sock-go-graceful-restart")

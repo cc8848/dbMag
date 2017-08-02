@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-func Producer (queue chan<- int){
+func Producer(queue chan<- int) {
 
-	for i:= 0; i < 10; i++ {
+	for i := 0; i < 10; i++ {
 
 		queue <- i
 
@@ -15,13 +15,11 @@ func Producer (queue chan<- int){
 
 }
 
+func Consumer(queue <-chan int) {
 
+	for i := 0; i < 10; i++ {
 
-func Consumer( queue <-chan int){
-
-	for i :=0; i < 10; i++{
-
-		v := <- queue
+		v := <-queue
 
 		fmt.Println("receive:", v)
 
@@ -29,7 +27,7 @@ func Consumer( queue <-chan int){
 
 }
 
-func main(){
+func main() {
 
 	queue := make(chan int, 1)
 

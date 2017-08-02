@@ -45,16 +45,15 @@ func (conn *DbConn) GetConn() (*sql.DB, error) {
 	return db, nil
 }
 
-func GetData(tb TableInfo,data interface{}) error {
+func GetData(tb TableInfo, data interface{}) error {
 
 	db, err := tb.dbconn.GetConn()
 	if err != nil {
 		return err
 	}
-	rows,err:=db.Query("SELECT  max(id) from " + tb.name)
+	rows, err := db.Query("SELECT  max(id) from " + tb.name)
 
 	rows.Scan(&tb.idval)
-
 
 	return nil
 }
