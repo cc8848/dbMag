@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"sync"
 )
-//https://segmentfault.com/a/1190000006261218
+
+//https://segmentfault.com/a/1190000006261218  https://blog.golang.org/pipelines
 func gen(nums ...int) <-chan int {
 	//out := make(chan int)
 	out := make(chan int, len(nums))
