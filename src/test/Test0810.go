@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"sync"
 )
-
+//https://segmentfault.com/a/1190000006261218
 func gen(nums ...int) <-chan int {
-	out := make(chan int)
+	//out := make(chan int)
+	out := make(chan int, len(nums))
 	go func() {
 		for _, n := range nums {
 			out <- n
